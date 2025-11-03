@@ -1,0 +1,4 @@
+registry=https://registry.npmjs.org/
+
+# If you need to authenticate for scoped operations, uncomment:
+# //registry.npmjs.org/:_authToken=${NPM_TOKEN}

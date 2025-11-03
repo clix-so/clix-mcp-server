@@ -1,0 +1,79 @@
+{
+  "name": "@clix-so/clix-mcp-server",
+  "version": "0.1.0",
+  "description": "Clix MCP Server for assisting Clix SDK/API integrations with semantic search across Clix docs and SDK source (iOS, Android, Flutter, React Native).",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Clix",
+  "homepage": "https://github.com/clix-so/clix-mcp-server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clix-so/clix-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/clix-so/clix-mcp-server/issues"
+  },
+  "keywords": [
+    "clix",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "sdk",
+    "developer-tools"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "clix-mcp-server": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "prepublishOnly": "npm run clean && npm run build",
+    "clean": "node -e \"const fs=require('fs');if(fs.existsSync('dist')){fs.rmSync('dist',{recursive:true,force:true})}\"",
+    "start": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write .",
+    "version:patch": "npm version patch",
+    "version:minor": "npm version minor",
+    "version:major": "npm version major",
+    "version:beta": "npm version prerelease --preid=beta",
+    "version:alpha": "npm version prerelease --preid=alpha",
+    "version:rc": "npm version prerelease --preid=rc",
+    "publish:stable": "npm run version:patch && npm publish",
+    "publish:beta": "npm run version:beta && npm publish --tag beta",
+    "publish:alpha": "npm run version:alpha && npm publish --tag alpha",
+    "publish:rc": "npm run version:rc && npm publish --tag rc"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4",
+    "vitest": "^3.2.4",
+    "zod-to-json-schema": "^3.24.6"
+  },
+  "packageManager": "npm@10.0.0"
+}

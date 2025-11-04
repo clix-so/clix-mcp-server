@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/clix-so-clix-mcp-server-badge.png)](https://mseep.ai/app/clix-so-clix-mcp-server)
+
 # Clix MCP Server
 
 Clix MCP Server implements the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), an open-source standard that allows large language models to interact with external tools and data sources.

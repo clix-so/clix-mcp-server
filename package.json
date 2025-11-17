@@ -1,6 +1,6 @@
 {
   "name": "@clix-so/clix-mcp-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Clix MCP Server for assisting Clix SDK/API integrations with semantic search across Clix docs and SDK source (iOS, Android, Flutter, React Native).",
   "license": "SEE LICENSE IN LICENSE",
   "author": "Clix",

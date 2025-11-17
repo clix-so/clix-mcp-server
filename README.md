@@ -47,7 +47,7 @@ Add Clix with:
   "mcpServers": {
     "clix-mcp-server": {
       "command": "npx",
-      "args": ["-y", "@clix-so/clix-mcp-server"]
+      "args": ["-y", "@clix-so/clix-mcp-server@latest"]
     }
   }
 }
@@ -74,7 +74,7 @@ Codex CLI:
 [mcp_servers]
   [mcp_servers.clix]
   command = "npx"
-  args = ["-y", "@clix-so/clix-mcp-server"]
+  args = ["-y", "@clix-so/clix-mcp-server@latest"]
 ```
 
 Restart your MCP client to load the configuration.

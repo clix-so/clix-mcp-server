@@ -83,7 +83,7 @@ function canonicalizePlatformHeader(rawHeader: string | undefined): string {
   if (/\bios\b/.test(header)) return "ios";
   if (/\bandroid\b/.test(header)) return "android";
   if (/\bflutter\b/.test(header)) return "flutter";
-  if (/\bjava\s*script\b/.test(header) || /\bjs\b/.test(header)) return "javascript";
+  if (/\bjavascript\b/.test(header) || /\bjs\b/.test(header)) return "javascript";
   if (/\bgoogle\s+tag\s+manager\b/.test(header) || /\bgtm\b/.test(header)) return "gtm";
   // Fallback: first token without parentheses
   const withoutParen = header.includes("(") ? (header.split("(")[0] ?? "") : header;

@@ -177,8 +177,8 @@ function searchSdk(
 }
 
 // Mapping index (aggregator) lives in this repository and lists per-SDK llms.txt URLs
-const SDK_LLMS_BASE = "https://raw.githubusercontent.com/clix-so/clix-mcp-server/refs/heads/main";
-const MAPPING_LLMS_URL = `${SDK_LLMS_BASE}/llms.txt`;
+const MAPPING_LLMS_URL =
+  "https://raw.githubusercontent.com/clix-so/clix-mcp-server/refs/heads/main/llms.txt";
 
 function findNearestPackageRoot(startDir: string): string {
   // Walk up directories until a package.json is found or root is reached

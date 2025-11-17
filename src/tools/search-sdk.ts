@@ -348,12 +348,18 @@ export const sdkSearchTool: ToolDefinition<SdkSearchInput, string> = {
       if (perSdkUrls.length === 0) {
         throw new ApiError(`Mapping llms.txt did not contain any per-SDK indexes.`);
       }
+      const failedSdks: string[] = [];
       const perSdkContents = await Promise.all(
         perSdkUrls.map(async (url) => {
           try {
             return await fetchTextWithTimeout(url, `SDK llms.txt (${url})`);
-          } catch {
+          } catch (err) {
             // If one fails, return empty to avoid failing entire search; user still gets partial results
+            failedSdks.push(url);
+            // Log to stderr (MCP spec: diagnostics/logging goes to stderr)
+            const message =
+              err instanceof Error ? err.message : typeof err === "string" ? err : String(err);
+            console.error(`[Debug] Failed to load SDK llms.txt: ${url} - ${message}`);
             return "";
           }
         })
@@ -435,6 +441,12 @@ export const sdkSearchTool: ToolDefinition<SdkSearchInput, string> = {
       // Add helpful footer
       output += `\n---\n\n`;
       output += `**Note**: All source code above is fetched directly from the Clix SDK repositories. You can use this code to understand implementation details, debug issues, or learn best practices.\n`;
+      if (failedSdks.length > 0) {
+        output += `\n**Debug**: Failed to load ${failedSdks.length} SDK index${
+          failedSdks.length === 1 ? "" : "es"
+        }.\n`;
+        output += failedSdks.map((u) => `- ${u}`).join("\n") + "\n";
+      }
 
       return output;
     } catch (error) {

@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/clix-so-clix-mcp-server-badge.png)](https://mseep.ai/app/clix-so-clix-mcp-server)
+
 # Clix MCP Server
 
 [![npm version](https://img.shields.io/npm/v/%40clix-so%2Fclix-mcp-server.svg?logo=npm&label=npm)](https://www.npmjs.com/package/@clix-so/clix-mcp-server)

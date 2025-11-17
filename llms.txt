@@ -1,0 +1,8 @@
+<!-- Clix SDK LLMS mapping -->
+
+# Clix SDK Index Mapping
+
+- [iOS](https://raw.githubusercontent.com/clix-so/clix-ios-sdk/refs/heads/main/llms.txt)
+- [Android](https://raw.githubusercontent.com/clix-so/clix-android-sdk/refs/heads/main/llms.txt)
+- [Flutter](https://raw.githubusercontent.com/clix-so/clix-flutter-sdk/refs/heads/main/llms.txt)
+- [React Native](https://raw.githubusercontent.com/clix-so/clix-react-native-sdk/refs/heads/main/llms.txt)

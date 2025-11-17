@@ -8,15 +8,17 @@ Clix MCP Server enables AI agents to deliver real‑time, trustworthy Clix
 documentation and SDK code examples for seamless integrations right inside any
 MCP‑compatible client.
 
-Clix MCP Server implements the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/),
-an open standard for enabling LLMs to interact with external tools and data.
+Clix MCP Server implements the
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io/), an open
+standard for enabling LLMs to interact with external tools and data.
 
 Key capabilities:
 
 - **Documentation Search** — Search Clix docs (user guides, API reference,
   troubleshooting, best practices) with semantic ranking.
 - **SDK Search** — Explore Clix SDKs (iOS, Android, Flutter, React Native) and
-  implementation examples. Discover SDK symbols and retrieve production‑ready snippets.
+  implementation examples. Discover SDK symbols and retrieve production‑ready
+  snippets.
 
 ## Installation
 
@@ -29,7 +31,7 @@ Key capabilities:
 Install Clix MCP Server:
 
 ```bash
-npm i -g @clix-so/clix-mcp-server
+npm i -g @clix-so/clix-mcp-server@latest
 ```
 
 Create or update the `.mcp.json` at your project root (or the configuration

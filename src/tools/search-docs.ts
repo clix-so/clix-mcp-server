@@ -10,6 +10,7 @@ import type { ToolDefinition, ServerContext } from "../types.js";
 import { DOCS_SEARCH_MAX_RESULTS, MCP_USER_AGENT, DEFAULT_API_TIMEOUT } from "../constants.js";
 import { ApiError } from "../errors.js";
 import { BM25 } from "../utils/bm25.js";
+import { DOCS_SEARCH_DESCRIPTION } from "./descriptions.js";
 
 const docsSearchInputSchema = z.object({
   query: z
@@ -176,37 +177,7 @@ async function fetchDocContent(url: string): Promise<string> {
 
 export const docsSearchTool: ToolDefinition<DocsSearchInput, string> = {
   name: "search_docs",
-  description: `Intelligent Documentation Search - Semantic search across official Clix documentation.
-
-**Overview:**
-Performs semantic search on the official Clix documentation index (llms.txt). Returns actual documentation content with relevant context for SDK integration, configuration, and troubleshooting.
-
-**Use Cases:**
-- SDK setup and initialization guides (iOS, Android, Flutter, React Native)
-- Push notification and in-app message configuration
-- API reference and integration patterns
-- Platform-specific implementation details
-- Troubleshooting SDK integration issues
-- Best practices and recommended workflows
-- User segmentation and analytics setup
-
-**Returns:**
-- Fetched documentation content (not just links)
-- Relevant excerpts with context
-- Source URLs for further reference
-- Ranked by relevance score
-
-**Parameters:**
-- \`query\` (required): Natural language search query (2-200 characters)
-- \`maxResults\` (optional): Number of results to return (1-10, default: 3)
-
-**Example:**
-\`\`\`
-search_docs({ 
-  query: "iOS push notification setup with APNs certificate", 
-  maxResults: 5 
-})
-\`\`\``,
+  description: DOCS_SEARCH_DESCRIPTION,
   inputSchema: {
     query: docsSearchInputSchema.shape.query,
     maxResults: docsSearchInputSchema.shape.maxResults,

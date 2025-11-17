@@ -10,6 +10,11 @@ import type { ToolDefinition, ServerContext } from "../types.js";
 import { SDK_SEARCH_MAX_RESULTS, MCP_USER_AGENT, DEFAULT_API_TIMEOUT } from "../constants.js";
 import { ApiError } from "../errors.js";
 import { BM25 } from "../utils/bm25.js";
+import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+import { SDK_SEARCH_DESCRIPTION } from "./descriptions.js";
 
 const sdkSearchInputSchema = z.object({
   query: z
@@ -33,11 +38,19 @@ const sdkSearchInputSchema = z.object({
         ios: "ios",
         android: "android",
         flutter: "flutter",
+        javascript: "javascript",
+        js: "javascript",
+        "google-tag-manager": "gtm",
+        gtm: "gtm",
+        "gtm-template": "gtm",
+        template: "gtm",
         all: "all",
       };
       return platformMap[normalized] || "all";
     })
-    .describe("Filter by SDK platform (ios, android, flutter, react native, or all)"),
+    .describe(
+      "Filter by SDK platform (ios, android, flutter, react native, javascript, gtm, or all)"
+    ),
   maxResults: z
     .number()
     .int()
@@ -64,17 +77,30 @@ interface SdkEntry {
  * # Platform: iOS
  * - [Title](file/path.swift): Description
  */
+function canonicalizePlatformHeader(rawHeader: string | undefined): string {
+  const header = (rawHeader ?? "").toLowerCase();
+  if (/\breact\s*-?\s*native\b/.test(header)) return "react-native";
+  if (/\bios\b/.test(header)) return "ios";
+  if (/\bandroid\b/.test(header)) return "android";
+  if (/\bflutter\b/.test(header)) return "flutter";
+  if (/\bjava\s*script\b/.test(header) || /\bjs\b/.test(header)) return "javascript";
+  if (/\bgoogle\s+tag\s+manager\b/.test(header) || /\bgtm\b/.test(header)) return "gtm";
+  // Fallback: first token without parentheses
+  const withoutParen = header.includes("(") ? (header.split("(")[0] ?? "") : header;
+  const firstToken = withoutParen.trim().split(/\s+/)[0];
+  return firstToken || "unknown";
+}
+
 function parseSdkLlmsTxt(content: string): SdkEntry[] {
   const entries: SdkEntry[] = [];
   const lines = content.split("\n");
   let currentPlatform = "unknown";
 
   for (const line of lines) {
-    // Check for platform header: # Platform: iOS (Swift)
-    // Extract only the platform name, ignore text in parentheses
-    const platformMatch = line.match(/^#\s*Platform:\s*([^\s(]+)/i);
+    // Check for platform header: # Platform: iOS / React Native / Flutter / Android
+    const platformMatch = line.match(/^#\s*Platform:\s*(.+)$/i);
     if (platformMatch && platformMatch[1]) {
-      currentPlatform = platformMatch[1].trim().toLowerCase();
+      currentPlatform = canonicalizePlatformHeader(platformMatch[1].trim());
       continue;
     }
 
@@ -150,29 +176,81 @@ function searchSdk(
     .filter((entry): entry is SdkEntry => entry !== undefined);
 }
 
-// Load sdk-llms.txt directly from GitHub raw so users don't need local copies
-const SDK_LLMS_TXT_URL =
-  "https://raw.githubusercontent.com/clix-so/clix-mcp-server/refs/heads/main/sdk-llms.txt";
+// Mapping index (aggregator) lives in this repository and lists per-SDK llms.txt URLs
+const SDK_LLMS_BASE = "https://raw.githubusercontent.com/clix-so/clix-mcp-server/refs/heads/main";
+const MAPPING_LLMS_URL = `${SDK_LLMS_BASE}/llms.txt`;
 
-async function fetchSdkLlmsTxt(): Promise<string> {
+function findNearestPackageRoot(startDir: string): string {
+  // Walk up directories until a package.json is found or root is reached
+  let current = startDir;
+  for (let i = 0; i < 8; i++) {
+    const pkgJson = path.join(current, "package.json");
+    if (existsSync(pkgJson)) return current;
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return startDir;
+}
+
+function pickLocalSdkLlmsPath(): string {
+  // Local fallback for mapping file
+  const filename = "llms.txt";
+  // Resolve relative to module, then walk to the nearest package root.
+  // Works both when running from src/ (dev) and dist/ (published).
+  const __filename = fileURLToPath((import.meta as any).url);
+  const __dirname = path.dirname(__filename);
+  const pkgRoot = findNearestPackageRoot(__dirname);
+  return path.join(pkgRoot, filename);
+}
+
+async function fetchTextWithTimeout(url: string, userFriendlyName: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), DEFAULT_API_TIMEOUT);
   try {
-    const response = await fetch(SDK_LLMS_TXT_URL, {
+    const response = await fetch(url, {
       headers: { "User-Agent": MCP_USER_AGENT, Accept: "text/plain, */*" },
       signal: controller.signal,
     });
     clearTimeout(timer);
     if (!response.ok) {
-      throw new Error(`Unable to load sdk-llms.txt (HTTP ${response.status})`);
+      throw new Error(`Unable to load ${userFriendlyName} (HTTP ${response.status})`);
     }
     return await response.text();
   } catch (err) {
     clearTimeout(timer);
     throw new Error(
-      `Failed to load sdk-llms.txt from GitHub raw. ${err instanceof Error ? err.message : String(err)}`
+      `Failed to load ${userFriendlyName} from GitHub raw. ${err instanceof Error ? err.message : String(err)}`
     );
   }
+}
+
+/**
+ * Parse mapping llms.txt to extract per-SDK llms.txt URLs.
+ * Accepts:
+ *  - Markdown list items containing a (...) URL ending with /llms.txt
+ *  - Plain lines that are URLs ending with /llms.txt
+ */
+function parseMappingLlmsUrls(content: string): string[] {
+  const urls = new Set<string>();
+  const lines = content.split("\n");
+  const urlRegex = /\((https?:\/\/[^\s)]+\/llms\.txt)\)/i;
+  const plainUrlRegex = /^(https?:\/\/[^\s)]+\/llms\.txt)\s*$/i;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const m1 = line.match(urlRegex);
+    if (m1 && m1[1]) {
+      urls.add(m1[1]);
+      continue;
+    }
+    const m2 = line.match(plainUrlRegex);
+    if (m2 && m2[1]) {
+      urls.add(m2[1]);
+      continue;
+    }
+  }
+  return Array.from(urls);
 }
 
 /**
@@ -236,46 +314,7 @@ async function fetchSdkContent(url: string): Promise<string> {
 
 export const sdkSearchTool: ToolDefinition<SdkSearchInput, string> = {
   name: "search_sdk",
-  description: `SDK Source Code Search - Search Clix SDK source code across iOS (Swift), Android (Kotlin), Flutter (Dart), and React Native (TypeScript) platforms.
-
-**Overview:**
-Intelligently searches Clix SDK source code repositories. Fetches actual implementation code with relevant context for development, debugging, and integration.
-
-**Use Cases:**
-- Find specific SDK methods and class implementations
-- Understand SDK architecture and design patterns
-- Locate platform-specific features and APIs
-- Debug SDK integration issues with actual source code
-- Learn best practices from production implementations
-- Compare implementations across platforms
-- Reference API signatures and method parameters
-
-**Platform Coverage:**
-- **iOS SDK (Swift)**: Core modules, Services, Models, Utilities, Extensions
-- **Android SDK (Kotlin)**: Core modules, Services, Models, Utilities, Managers
-- **Flutter SDK (Dart)**: Core modules, Services, Models, Platform channels, Widgets
-- **React Native SDK (TypeScript)**: Core modules, Services, Models, Native bridges, Utilities
-
-**Returns:**
-- Actual source code fetched from GitHub
-- File metadata (platform, path, description)
-- Ranked by relevance to query
-- Syntax-highlighted code blocks
-- Direct GitHub repository links
-
-**Parameters:**
-- \`query\` (required): Code-focused search query (2-200 characters)
-- \`platform\` (optional): Filter by platform (\`ios\`, \`android\`, \`flutter\`, \`react-native\`, \`all\`)
-- \`maxResults\` (optional): Number of results to return (1-10, default: 3)
-
-**Example:**
-\`\`\`
-search_sdk({ 
-  query: "notification service extension implementation", 
-  platform: "ios",
-  maxResults: 3
-})
-\`\`\``,
+  description: SDK_SEARCH_DESCRIPTION,
   inputSchema: {
     query: sdkSearchInputSchema.shape.query,
     platform: sdkSearchInputSchema.shape.platform,
@@ -287,12 +326,43 @@ search_sdk({
   },
   async handler(params: SdkSearchInput, _context: ServerContext): Promise<string> {
     try {
-      // Load SDK llms.txt from GitHub raw
-      const content = await fetchSdkLlmsTxt();
-      const allEntries = parseSdkLlmsTxt(content);
+      // Load mapping llms.txt (list of per-SDK llms.txt URLs)
+      const mappingUrl = MAPPING_LLMS_URL;
+      const localPath = pickLocalSdkLlmsPath();
+      // Prefer online mapping (always up-to-date). Fallback to local llms.txt when offline/unavailable.
+      let mappingContent: string;
+      try {
+        mappingContent = await fetchTextWithTimeout(mappingUrl, "mapping llms.txt");
+      } catch {
+        try {
+          mappingContent = await readFile(localPath, "utf8");
+        } catch {
+          throw new ApiError(
+            `Unable to load mapping index from network (${mappingUrl}) and local fallback (${localPath}).`
+          );
+        }
+      }
 
+      // Extract per-SDK llms.txt URLs and fetch them all in parallel
+      const perSdkUrls = parseMappingLlmsUrls(mappingContent);
+      if (perSdkUrls.length === 0) {
+        throw new ApiError(`Mapping llms.txt did not contain any per-SDK indexes.`);
+      }
+      const perSdkContents = await Promise.all(
+        perSdkUrls.map(async (url) => {
+          try {
+            return await fetchTextWithTimeout(url, `SDK llms.txt (${url})`);
+          } catch {
+            // If one fails, return empty to avoid failing entire search; user still gets partial results
+            return "";
+          }
+        })
+      );
+
+      // Parse and aggregate entries across SDKs
+      const allEntries = perSdkContents.filter((c) => !!c).flatMap((c) => parseSdkLlmsTxt(c));
       if (allEntries.length === 0) {
-        return `[Warning] No SDK Documentation Available\n\nUnable to parse SDK llms.txt. Please ensure sdk-llms.txt is properly configured.`;
+        return `[Warning] No SDK Documentation Available\n\nUnable to parse any SDK llms.txt. Please ensure each SDK has a valid llms.txt and the mapping file lists them.`;
       }
 
       // Search SDK entries

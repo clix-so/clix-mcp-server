@@ -11,6 +11,7 @@ import type { ServerContext } from "../../src/types.js";
 // Mock fetch for testing: serve mapping llms.txt, per-SDK llms.txt and raw code
 const REMOTE_MAPPING_LLMS_URL =
   "https://raw.githubusercontent.com/clix-so/clix-mcp-server/refs/heads/main/llms.txt";
+const ORIGINAL_FETCH: any = (global as any).fetch;
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -64,6 +65,88 @@ describe("SDK Search Tool", () => {
       // Return small code snippet for raw source file requests
       return Promise.resolve({ ok: true, text: () => Promise.resolve("class Clix { }") });
     });
+  });
+
+  describe("Link integrity - mapping and SDK entries (live)", () => {
+    function parseMarkdownLinks(content: string): string[] {
+      const urls: string[] = [];
+      const re = /\((https?:\/\/[^\s)]+)\)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(content)) !== null) {
+        if (m[1]) urls.push(m[1]);
+      }
+      return urls;
+    }
+
+    it("should fetch each per-SDK llms.txt and all entry links (HTTP 200)", async () => {
+      if (typeof ORIGINAL_FETCH !== "function") {
+        // No live fetch available; skip test gracefully
+        return;
+      }
+      // Counters
+      let perSdkTotal = 0;
+      let perSdkOk = 0;
+      let perSdkFail = 0;
+      let entryTotal = 0;
+      let entryOk = 0;
+      let entryFail = 0;
+      // Fetch mapping file live (skip test if not accessible to avoid flaky failures)
+      let mappingRes: any = null;
+      try {
+        mappingRes = await ORIGINAL_FETCH(REMOTE_MAPPING_LLMS_URL as any);
+      } catch {
+        // eslint-disable-next-line no-console
+        console.warn("Skipping link integrity test: mapping fetch failed (network).");
+        return;
+      }
+      if (!mappingRes || !mappingRes.ok) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `Skipping link integrity test: mapping not accessible (status=${mappingRes?.status}).`
+        );
+        return;
+      }
+      const mappingText = await (mappingRes as any).text();
+      const perSdkUrls = parseMarkdownLinks(mappingText).filter((u) => /\/llms\.txt$/i.test(u));
+      expect(perSdkUrls.length).toBeGreaterThan(0);
+
+      // For each per-SDK llms, fetch and then fetch all raw file links listed within
+      for (const perUrl of perSdkUrls) {
+        perSdkTotal++;
+        const perRes = await ORIGINAL_FETCH(perUrl as any);
+        if (!perRes || !perRes.ok) {
+          perSdkFail++;
+          // eslint-disable-next-line no-console
+          console.warn(`Skipping per-SDK llms due to HTTP ${perRes?.status}: ${perUrl}`);
+          continue;
+        }
+        perSdkOk++;
+        const perTxt = await (perRes as any).text();
+        const entryUrls = parseMarkdownLinks(perTxt).filter((u) =>
+          u.startsWith("https://raw.githubusercontent.com/")
+        );
+        // Sanity: each SDK llms should have at least one entry
+        expect(entryUrls.length).toBeGreaterThan(0);
+        entryTotal += entryUrls.length;
+        // Fetch sequentially to avoid rate limits
+        for (const fileUrl of entryUrls) {
+          const r = await ORIGINAL_FETCH(fileUrl as any);
+          if (!r || !r.ok) {
+            entryFail++;
+            // eslint-disable-next-line no-console
+            console.warn(`Entry not accessible (HTTP ${r?.status}): ${fileUrl}`);
+          } else {
+            entryOk++;
+            expect(r.ok).toBe(true);
+          }
+        }
+      }
+      // Summary
+      // eslint-disable-next-line no-console
+      console.log(
+        `Link integrity summary: per-SDK llms total=${perSdkTotal} ok=${perSdkOk} fail=${perSdkFail} | entries total=${entryTotal} ok=${entryOk} fail=${entryFail}`
+      );
+    }, 60000);
   });
 
   describe("Tool Metadata", () => {

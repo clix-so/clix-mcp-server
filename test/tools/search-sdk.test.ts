@@ -8,20 +8,39 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { sdkSearchTool } from "../../src/tools/search-sdk.js";
 import type { ServerContext } from "../../src/types.js";
 
-// Mock fetch for testing: serve remote sdk-llms.txt and raw code
-const REMOTE_LLMS_URL =
-  "https://raw.githubusercontent.com/clix-so/clix-mcp-server/refs/heads/main/sdk-llms.txt";
+// Mock fetch for testing: serve mapping llms.txt, per-SDK llms.txt and raw code
+const REMOTE_MAPPING_LLMS_URL =
+  "https://raw.githubusercontent.com/clix-so/clix-mcp-server/refs/heads/main/llms.txt";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const __filename = fileURLToPath((import.meta as any).url);
+const __dirname = path.dirname(__filename);
+const REPO_ROOT = path.resolve(__dirname, "../../");
+const LOCAL_MAPPING_PATH = path.join(REPO_ROOT, "llms.txt");
+
+function parseUrlsFromMapping(content: string): string[] {
+  const urls = new Set<string>();
+  const re = /\((https?:\/\/[^\s)]+\/llms\.txt)\)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    if (m[1]) urls.add(m[1]);
+  }
+  return Array.from(urls);
+}
+
+const MAPPING_LLMS_TEXT = readFileSync(LOCAL_MAPPING_PATH, "utf8");
+const PER_SDK_LLMS_URLS = parseUrlsFromMapping(MAPPING_LLMS_TEXT);
 
 const LLMS_TEXT = [
   "# Platform: iOS",
-  "- [Notification Service](https://raw.githubusercontent.com/example/ios/NotificationService.swift): iOS push notification service",
-  "- [Clix Main SDK](https://raw.githubusercontent.com/example/ios/Clix.swift): Core SDK entry point",
+  "- [Notification Service](https://raw.githubusercontent.com/clix-so/clix-ios-sdk/main/Sources/Services/NotificationService.swift): Handles iOS push notification processing in Clix SDK",
   "# Platform: android",
-  "- [Android Notification](https://raw.githubusercontent.com/example/android/Notification.kt): Android notification service",
+  "- [Notification Service](https://raw.githubusercontent.com/clix-so/clix-android-sdk/main/clix/src/main/kotlin/so/clix/services/NotificationService.kt): Android push notification handling service",
   "# Platform: flutter",
-  "- [Dart Notification](https://raw.githubusercontent.com/example/flutter/notification.dart): Flutter notification service",
+  "- [Notification Service](https://raw.githubusercontent.com/clix-so/clix-flutter-sdk/main/lib/src/services/notification_service.dart): Flutter notification service",
   "# Platform: react-native",
-  "- [RN Notification](https://raw.githubusercontent.com/example/react-native/Notification.ts): RN notification service",
+  "- [Notification Service](https://raw.githubusercontent.com/clix-so/clix-react-native-sdk/main/src/services/NotificationService.ts): React Native notification orchestration",
 ].join("\n");
 
 global.fetch = vi.fn();
@@ -36,7 +55,10 @@ describe("SDK Search Tool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (global.fetch as any).mockImplementation((url: string) => {
-      if (typeof url === "string" && url.includes(REMOTE_LLMS_URL)) {
+      if (typeof url === "string" && url.includes(REMOTE_MAPPING_LLMS_URL)) {
+        return Promise.resolve({ ok: true, text: () => Promise.resolve(MAPPING_LLMS_TEXT) });
+      }
+      if (typeof url === "string" && PER_SDK_LLMS_URLS.some((u) => url.includes(u))) {
         return Promise.resolve({ ok: true, text: () => Promise.resolve(LLMS_TEXT) });
       }
       // Return small code snippet for raw source file requests
@@ -116,7 +138,10 @@ describe("SDK Search Tool", () => {
     it("should handle multi-term queries", async () => {
       const mockCode = "class NotificationService { }";
       (global.fetch as any).mockImplementation((url: string) => {
-        if (typeof url === "string" && url.includes(REMOTE_LLMS_URL)) {
+        if (typeof url === "string" && url.includes(REMOTE_MAPPING_LLMS_URL)) {
+          return Promise.resolve({ ok: true, text: () => Promise.resolve(MAPPING_LLMS_TEXT) });
+        }
+        if (typeof url === "string" && PER_SDK_LLMS_URLS.some((u) => url.includes(u))) {
           return Promise.resolve({ ok: true, text: () => Promise.resolve(LLMS_TEXT) });
         }
         return Promise.resolve({ ok: true, text: () => Promise.resolve(mockCode) });
@@ -141,7 +166,10 @@ describe("SDK Search Tool", () => {
 }`;
 
       (global.fetch as any).mockImplementation((url: string) => {
-        if (typeof url === "string" && url.includes(REMOTE_LLMS_URL)) {
+        if (typeof url === "string" && url.includes(REMOTE_MAPPING_LLMS_URL)) {
+          return Promise.resolve({ ok: true, text: () => Promise.resolve(MAPPING_LLMS_TEXT) });
+        }
+        if (typeof url === "string" && PER_SDK_LLMS_URLS.some((u) => url.includes(u))) {
           return Promise.resolve({ ok: true, text: () => Promise.resolve(LLMS_TEXT) });
         }
         return Promise.resolve({ ok: true, text: () => Promise.resolve(mockCode) });
@@ -170,7 +198,10 @@ describe("SDK Search Tool", () => {
       const longCode = "// Code\n".repeat(1000);
 
       (global.fetch as any).mockImplementation((url: string) => {
-        if (typeof url === "string" && url.includes(REMOTE_LLMS_URL)) {
+        if (typeof url === "string" && url.includes(REMOTE_MAPPING_LLMS_URL)) {
+          return Promise.resolve({ ok: true, text: () => Promise.resolve(MAPPING_LLMS_TEXT) });
+        }
+        if (typeof url === "string" && PER_SDK_LLMS_URLS.some((u) => url.includes(u))) {
           return Promise.resolve({ ok: true, text: () => Promise.resolve(LLMS_TEXT) });
         }
         return Promise.resolve({ ok: true, text: () => Promise.resolve(longCode) });
@@ -187,7 +218,10 @@ describe("SDK Search Tool", () => {
 
     it("should handle fetch errors gracefully", async () => {
       (global.fetch as any).mockImplementation((url: string) => {
-        if (typeof url === "string" && url.includes(REMOTE_LLMS_URL)) {
+        if (typeof url === "string" && url.includes(REMOTE_MAPPING_LLMS_URL)) {
+          return Promise.resolve({ ok: true, text: () => Promise.resolve(MAPPING_LLMS_TEXT) });
+        }
+        if (typeof url === "string" && PER_SDK_LLMS_URLS.some((u) => url.includes(u))) {
           return Promise.resolve({ ok: true, text: () => Promise.resolve(LLMS_TEXT) });
         }
         return Promise.resolve({ ok: false, status: 404 });

@@ -30,6 +30,21 @@ search_docs({
 })
 \`\`\``;
 
+export const CLIX_CLI_DESCRIPTION = `Get Clix CLI installation and usage instructions for integrating Clix SDK into mobile projects.
+
+**When to use:**
+- User wants to integrate Clix SDK into iOS, Android, Expo, or Flutter project
+- User needs help with push notification setup using Clix
+- User asks about clix install, clix doctor, or clix uninstall commands
+
+**What this returns:**
+- How to install Clix CLI (brew install clix-so/clix-cli/clix)
+- Prerequisites for each platform
+- Command usage with flags and examples
+- Troubleshooting steps
+
+No parameters required. Returns full CLI guide.`;
+
 export const SDK_SEARCH_DESCRIPTION = `SDK Source Code Search - Search Clix SDK source code across iOS (Swift), Android (Kotlin), Flutter (Dart), and React Native (TypeScript) platforms.
 
 **Overview:**

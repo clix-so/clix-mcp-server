@@ -36,6 +36,7 @@ export type ToolDefinition<TInput = any, TOutput = any> = {
   annotations?: {
     readOnlyHint?: boolean;
     openWorldHint?: boolean;
+    title?: string;
   };
 };
 

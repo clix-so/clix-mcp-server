@@ -19,6 +19,7 @@ Key capabilities:
 - **SDK Search** — Explore Clix SDKs (iOS, Android, Flutter, React Native) and
   implementation examples. Discover SDK symbols and retrieve production‑ready
   snippets.
+- **Clix CLI** - Explore Clix CLI commands (install, doctor, uninstall) for SDK integration. Automate push notification setup across iOS, Android, Expo, and Flutter projects.
 
 ## Installation
 
@@ -91,7 +92,7 @@ clix-mcp-server [options]
 ## Usage
 
 This package runs as an MCP server. Once configured in your MCP client, you can
-invoke `search_docs` and `search_sdk` directly from the client’s tool palette or
+invoke `search_docs`, `search_sdk` and `clix_cli` directly from the client’s tool palette or
 assistant UI.
 
 Notes:

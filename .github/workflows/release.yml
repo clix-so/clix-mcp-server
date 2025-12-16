@@ -56,7 +56,7 @@ jobs:
         with:
           tag: ${{ github.event.inputs.version }}
           name: ${{ github.event.inputs.version }}
-          body: Release ${{ github.event.inputs.version }}
+          generateReleaseNotes: true
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
 

@@ -13,7 +13,7 @@ import { CLIX_CLI_DESCRIPTION } from "./descriptions.js";
 const CLI_LLMS_URL = "https://raw.githubusercontent.com/clix-so/homebrew-clix-cli/refs/heads/main/llms.txt";
 
 export const clixCliTool: ToolDefinition<Record<string, never>, string> = {
-  name: "clix_CLI",
+  name: "clix_cli",
   description: CLIX_CLI_DESCRIPTION,
   inputSchema: {},
   annotations: {

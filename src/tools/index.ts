@@ -12,7 +12,7 @@ import { sdkSearchTool } from "./search-sdk.js";
  * All tools mapped by their command names
  */
 export const MCP_TOOLS = {
-  clix_CLI: clixCliTool,
+  clix_cli: clixCliTool,
   search_docs: docsSearchTool,
   search_sdk: sdkSearchTool,
 } as const;

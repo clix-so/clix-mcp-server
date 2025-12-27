@@ -1,0 +1,24 @@
+{
+  "name": "clix-marketplace",
+  "owner": {
+    "name": "clix-so",
+    "email": "contact@clix.so"
+  },
+  "plugins": [
+    {
+      "name": "clix-mcp-server",
+      "source": {
+        "source": "github",
+        "repo": "clix-so/clix-mcp-server"
+      },
+      "description": "Clix MCP Server",
+      "strict": false,
+      "mcpServers": {
+        "clix": {
+          "command": "npx",
+          "args": ["clix-mcp-server"]
+        }
+      }
+    }
+  ]
+}

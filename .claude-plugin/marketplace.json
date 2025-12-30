@@ -12,7 +12,7 @@
       "name": "clix-mcp-server",
       "source": {
         "source": "github",
-        "repo": "https://github.com/clix-so/clix-mcp-server"
+        "repo": "clix-so/clix-mcp-server"
       },
       "description": "A Model Context Protocol server enabling AI agents to deliver real-time, trustworthy Clix documentation and SDK code examples. Provides documentation search with semantic ranking, SDK source code search across iOS/Android/Flutter/React Native, and CLI installation guides.",
       "author": {

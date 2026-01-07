@@ -1,7 +1,7 @@
 # Clix MCP Server
 
 [![npm version](https://img.shields.io/npm/v/%40clix-so%2Fclix-mcp-server.svg?logo=npm&label=npm)](https://www.npmjs.com/package/@clix-so/clix-mcp-server)
-[![npm downloads](https://img.shields.io/npm/dm/%40clix-so%2Fclix-mcp-server.svg)](https://www.npmjs.com/package/@clix-so/clix-mcp-server)
+[![npm downloads](https://img.shields.io/npm/d18m/%40clix-so%2Fclix-mcp-server.svg)](https://www.npmjs.com/package/@clix-so/clix-mcp-server)
 [![License](https://img.shields.io/npm/l/%40clix-so%2Fclix-mcp-server.svg)](LICENSE)
 
 Clix MCP Server enables AI agents to deliver real‑time, trustworthy Clix
